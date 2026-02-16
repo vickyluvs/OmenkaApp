@@ -171,7 +171,4 @@ export default function EditorScreen() {
       </div>
     </div>
   );
-}export default function App() {
-  return <EditorScreen />;
 }
-
