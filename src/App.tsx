@@ -1,5 +1,4 @@
-import React from "react";
-import EditorScreen from "./features/editor/EditotorScreen";
+import EditorScreen from "./features/editor/EditorScreen";
 
 export default function App() {
   return <EditorScreen />;
