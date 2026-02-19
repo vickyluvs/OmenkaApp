@@ -47,4 +47,9 @@ module.exports = async (req, res) => {
     res.statusCode = 500;
     return res.end(JSON.stringify({ error: "Server error", details: String(err) }));
   }
+
+  
 };
+
+console.log("Has key:", !!process.env.OPENAI_API_KEY);
+

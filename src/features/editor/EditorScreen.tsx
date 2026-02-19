@@ -2,47 +2,22 @@ import { useEffect, useMemo, useState } from "react";
 import { User } from "firebase/auth";
 import { ScriptBlock, ScriptProject } from "../../lib/types";
 import { listProjects, upsertProject, removeProject } from "../../lib/projectsRepo";
-
-// 1. Helper functions outside the component
-const id = () => Math.random().toString(36).slice(2, 10);
-
-const makeDefaultProject = (): ScriptProject => ({
-  id: id(),
-  metadata: {
-    title: "UNTITLED SCREENPLAY",
-    author: "Omenka Writer",
-    draftDate: new Date().toLocaleDateString(),
-    country: "Nigeria",
-  },
-  content: [{ id: id(), type: "scene-heading", content: "INT. LIVING ROOM - DAY" }],
-  lastModifiedISO: new Date().toISOString(),
-});
-
-function nextType(t: ScriptBlock["type"]): ScriptBlock["type"] {
-  switch (t) {
-    case "scene-heading": return "action";
-    case "character": return "dialogue";
-    case "parenthetical": return "dialogue";
-    case "dialogue": return "character";
-    case "transition": return "scene-heading";
-    default: return "action";
-  }
-}
+import { useDebouncedEffect } from "../../lib/useDebouncedEffect";
 
 type Props = { user: User };
 
-// 2. The single, clean component
 export default function EditorScreen({ user }: Props) {
   const [projects, setProjects] = useState<ScriptProject[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("saved");
 
   const active = useMemo(() => {
     if (!projects.length) return null;
     return projects.find((p) => p.id === activeId) || projects[0];
   }, [projects, activeId]);
 
+  // Initial Load
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -53,12 +28,6 @@ export default function EditorScreen({ user }: Props) {
         if (remote.length) {
           setProjects(remote);
           setActiveId(remote[0].id);
-        } else {
-          const first = makeDefaultProject();
-          await upsertProject(user.uid, first);
-          if (cancelled) return;
-          setProjects([first]);
-          setActiveId(first.id);
         }
       } catch (e) {
         console.error("Failed to load projects:", e);
@@ -69,166 +38,97 @@ export default function EditorScreen({ user }: Props) {
     return () => { cancelled = true; };
   }, [user.uid]);
 
-  useEffect(() => {
-    if (!active) return;
-    setSaveStatus("saving");
-    const t = window.setTimeout(async () => {
-      try {
-        await upsertProject(user.uid, active);
-        setSaveStatus("saved");
-      } catch (e) {
-        console.error("Failed to save project:", e);
-        setSaveStatus("error");
-      }
-    }, 600);
-    return () => window.clearTimeout(t);
-  }, [user.uid, active]);
+  // The Debounced Autosave Hook
+  useDebouncedEffect(
+    () => {
+      if (!active) return;
+      setSaveStatus("saving");
+      
+      upsertProject(user.uid, active)
+        .then(() => setSaveStatus("saved"))
+        .catch(() => setSaveStatus("error"));
+    },
+    [active], 
+    1000 
+  );
 
   const updateActive = (updater: (p: ScriptProject) => ScriptProject) => {
     if (!active) return;
+    // Immediately tell the UI we have unsaved changes
+    setSaveStatus("idle"); 
     setProjects((prev) => prev.map((p) => (p.id === active.id ? updater(p) : p)));
   };
 
-  const updateBlock = (blockId: string, content: string) => {
-    updateActive((p) => ({
-      ...p,
-      lastModifiedISO: new Date().toISOString(),
-      content: p.content.map((b) => (b.id === blockId ? { ...b, content } : b)),
-    }));
-  };
-
-  const addBlockAfter = (afterId: string) => {
-    updateActive((p) => {
-      const idx = p.content.findIndex((b) => b.id === afterId);
-      if (idx === -1) return p;
-      const after = p.content[idx];
-      const newBlock: ScriptBlock = { id: id(), type: nextType(after.type), content: "" };
-      const next = [...p.content];
-      next.splice(idx + 1, 0, newBlock);
-      return { ...p, lastModifiedISO: new Date().toISOString(), content: next };
-    });
-  };
-
-  const removeBlock = (blockId: string) => {
-    updateActive((p) => {
-      if (p.content.length <= 1) return p;
-      return {
-        ...p,
-        lastModifiedISO: new Date().toISOString(),
-        content: p.content.filter((b) => b.id !== blockId),
-      };
-    });
-  };
-
-  const createNewProject = async () => {
-    const p: ScriptProject = {
-      ...makeDefaultProject(),
-      id: id(),
-      content: [{ id: id(), type: "scene-heading", content: "INT. NEW SCENE - DAY" }],
-      lastModifiedISO: new Date().toISOString(),
-    };
-    setProjects((prev) => [p, ...prev]);
-    setActiveId(p.id);
-    try {
-      await upsertProject(user.uid, p);
-    } catch (e) {
-      console.error("Failed to create project:", e);
-      setSaveStatus("error");
+  // --- Dynamic Styles for the Status Badge ---
+  const getStatusStyle = () => {
+    switch (saveStatus) {
+      case "saving":
+        return { color: "#3b82f6", glow: "rgba(59, 130, 246, 0.5)", text: "Saving..." };
+      case "saved":
+        return { color: "#10b981", glow: "rgba(16, 185, 129, 0.3)", text: "All changes saved" };
+      case "error":
+        return { color: "#ef4444", glow: "rgba(239, 68, 68, 0.5)", text: "Save Error" };
+      default:
+        return { color: "#f59e0b", glow: "rgba(245, 158, 11, 0.3)", text: "Unsaved changes" };
     }
   };
 
-  const deleteCurrentProject = async () => {
-    if (!active) return;
-    const ok = window.confirm("Delete this project?");
-    if (!ok) return;
-    const idToDelete = active.id;
-    setProjects((prev) => prev.filter((p) => p.id !== idToDelete));
-    setActiveId(() => {
-      const remaining = projects.filter((p) => p.id !== idToDelete);
-      return remaining[0]?.id ?? null;
-    });
-    try {
-      await removeProject(user.uid, idToDelete);
-    } catch (e) {
-      console.error("Failed to delete project:", e);
-      setSaveStatus("error");
-    }
-  };
+  const status = getStatusStyle();
 
-  if (loading) return <div style={{ padding: 24 }}>Loading projects…</div>;
+  if (loading) return <div style={{ padding: 24 }}>Loading...</div>;
   if (!active) return <div style={{ padding: 24 }}>No project found.</div>;
-
-  const saveLabel =
-    saveStatus === "saving" ? "Saving…" :
-    saveStatus === "saved" ? "Saved" :
-    saveStatus === "error" ? "Save error" : "Idle";
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: 24, fontFamily: "ui-sans-serif" }}>
-      <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16 }}>
+      {/* Header Section */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <input
           value={active.metadata.title}
-          onChange={(e) =>
-            updateActive((p) => ({
-              ...p,
-              metadata: { ...p.metadata, title: e.target.value },
-            }))
-          }
-          style={{ fontSize: 18, fontWeight: 700, flex: 1, padding: 8 }}
+          onChange={(e) => updateActive(p => ({ ...p, metadata: { ...p.metadata, title: e.target.value } }))}
+          style={{ fontSize: 24, fontWeight: 800, border: "none", outline: "none", flex: 1 }}
         />
-        <button onClick={createNewProject}>New Project</button>
-        <button onClick={deleteCurrentProject} disabled={!active}>
-          Delete Project
-        </button>
+        
+        {/* Animated Save Badge */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "6px 12px",
+          borderRadius: 20,
+          fontSize: 12,
+          fontWeight: 600,
+          transition: "all 0.3s ease",
+          color: status.color,
+          backgroundColor: status.glow,
+          border: `1px solid ${status.color}`
+        }}>
+          <span style={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            backgroundColor: status.color,
+            display: "inline-block",
+            // This creates the pulsing animation if saving
+            animation: saveStatus === "saving" ? "pulse 1s infinite" : "none"
+          }} />
+          {status.text}
+        </div>
       </div>
 
-      <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 12 }}>
-        Autosave: {saveLabel}. Last modified: {new Date(active.lastModifiedISO).toLocaleString()}
-      </div>
+      <style>{`
+        @keyframes pulse {
+          0% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(1.2); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
 
-      <div style={{ background: "white", borderRadius: 12, padding: 24, border: "1px solid #e5e7eb" }}>
+      {/* Editor Content Area */}
+      <div style={{ background: "white", borderRadius: 12, padding: 32, boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}>
         {active.content.map((b) => (
-          <div key={b.id} style={{ marginBottom: 12 }}>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <select
-                value={b.type}
-                onChange={(e) =>
-                  updateActive((p) => ({
-                    ...p,
-                    content: p.content.map((x) =>
-                      x.id === b.id ? { ...x, type: e.target.value as ScriptBlock["type"] } : x
-                    ),
-                  }))
-                }
-              >
-                <option value="scene-heading">Scene Heading</option>
-                <option value="action">Action</option>
-                <option value="character">Character</option>
-                <option value="parenthetical">Parenthetical</option>
-                <option value="dialogue">Dialogue</option>
-                <option value="transition">Transition</option>
-                <option value="shot">Shot</option>
-              </select>
-              <button onClick={() => addBlockAfter(b.id)}>+ Block</button>
-              <button onClick={() => removeBlock(b.id)} disabled={active.content.length <= 1}>
-                Delete Block
-              </button>
-            </div>
-            <textarea
-              value={b.content}
-              onChange={(e) => updateBlock(b.id, e.target.value)}
-              placeholder={b.type.toUpperCase()}
-              rows={b.type === "dialogue" ? 3 : 2}
-              style={{
-                width: "100%",
-                marginTop: 6,
-                padding: 10,
-                borderRadius: 10,
-                border: "1px solid #e5e7eb",
-                fontFamily: "ui-monospace",
-              }}
-            />
-          </div>
+           <div key={b.id} style={{ marginBottom: 20 }}>
+             {/* ... (Your existing textarea and block controls) ... */}
+           </div>
         ))}
       </div>
     </div>
