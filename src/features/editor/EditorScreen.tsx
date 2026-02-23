@@ -218,111 +218,135 @@ export default function EditorScreen({ user }: Props) {
   if (loading)
     return <div style={{ padding: 40 }}>Loading Omenka Studio...</div>;
 
+  // delete here
   return (
     <div
-      style={{ display: "flex", height: "100vh", backgroundColor: "#f3f4f6" }}
+      style={{
+        display: "flex",
+        height: "100vh",
+        backgroundColor: "#0f172a",
+        fontFamily: "sans-serif",
+      }}
     >
       {/* SIDEBAR */}
       <aside
         style={{
-          width: 280,
-          backgroundColor: "white",
-          borderRight: "1px solid #e5e7eb",
+          width: 300,
+          backgroundColor: "#1e293b",
+          borderRight: "1px solid #334155",
           display: "flex",
           flexDirection: "column",
+          boxShadow: "4px 0 10px rgba(0,0,0,0.3)",
         }}
       >
-        <div
-          style={{ padding: "24px 20px", borderBottom: "1px solid #f3f4f6" }}
-        >
-          <h2
+        <div style={{ padding: "24px 20px" }}>
+          <h1
             style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: "#9ca3af",
-              marginBottom: 16,
+              color: "#38bdf8",
+              fontSize: 18,
+              fontWeight: 900,
+              letterSpacing: 1,
+              marginBottom: 20,
             }}
           >
-            HISTORY
-          </h2>
+            OMENKA{" "}
+            <span style={{ color: "#fff", fontWeight: 300 }}>STUDIO</span>
+          </h1>
           <button
             onClick={createNewProject}
             style={{
               width: "100%",
-              padding: "10px",
+              padding: "12px",
               borderRadius: 8,
-              backgroundColor: "#111827",
-              color: "white",
+              backgroundColor: "#38bdf8",
+              color: "#0f172a",
               border: "none",
               cursor: "pointer",
-              fontWeight: 600,
+              fontWeight: 800,
+              boxShadow: "0 4px 14px rgba(56, 189, 248, 0.4)",
             }}
           >
-            + New Script
+            + NEW SCRIPT
           </button>
         </div>
 
-        <nav style={{ flex: 1, overflowY: "auto", padding: 10 }}>
+        <nav style={{ flex: 1, overflowY: "auto", padding: "0 15px" }}>
+          <h2
+            style={{
+              fontSize: 10,
+              color: "#64748b",
+              fontWeight: 800,
+              marginBottom: 10,
+              paddingLeft: 10,
+            }}
+          >
+            RECENT PROJECTS
+          </h2>
           {projects.map((p) => (
             <div
               key={p.id}
               onClick={() => setActiveId(p.id)}
               style={{
-                padding: "12px 16px",
+                padding: "12px 15px",
                 borderRadius: 8,
                 cursor: "pointer",
-                marginBottom: 4,
-                backgroundColor: activeId === p.id ? "#f9fafb" : "transparent",
+                marginBottom: 6,
+                backgroundColor: activeId === p.id ? "#334155" : "transparent",
                 border:
                   activeId === p.id
-                    ? "1px solid #e5e7eb"
+                    ? "1px solid #475569"
                     : "1px solid transparent",
+                transition: "all 0.2s",
               }}
             >
               <div
                 style={{
                   fontSize: 14,
                   fontWeight: activeId === p.id ? 700 : 500,
-                  color: "#374151",
+                  color: activeId === p.id ? "#fff" : "#94a3b8",
                 }}
               >
                 {p.metadata.title}
               </div>
-              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+              <div style={{ fontSize: 10, color: "#64748b", marginTop: 4 }}>
                 {new Date(p.lastModifiedISO).toLocaleDateString()}
               </div>
             </div>
           ))}
         </nav>
 
-        {/* NEW: AI PANEL IN SIDEBAR */}
+        {/* AI PANEL */}
         <div
           style={{
             padding: "20px",
-            borderTop: "1px solid #f3f4f6",
-            backgroundColor: "#f9fafb",
+            margin: "15px",
+            borderRadius: 12,
+            background: "linear-gradient(145deg, #1e293b, #0f172a)",
+            border: "1px solid #38bdf855",
           }}
         >
           <h3
             style={{
               fontSize: 10,
               fontWeight: 800,
-              color: "#6b7280",
-              marginBottom: 12,
+              color: "#38bdf8",
+              marginBottom: 10,
             }}
           >
-            AI IDEATION
+            AI BRAINSTORM
           </h3>
           <textarea
-            placeholder="Type words or a sentence..."
+            placeholder="Seed words..."
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
             style={{
               width: "100%",
               fontSize: 13,
-              padding: "8px",
-              borderRadius: 8,
-              border: "1px solid #e5e7eb",
+              padding: "10px",
+              borderRadius: 6,
+              backgroundColor: "#0f172a",
+              border: "1px solid #334155",
+              color: "#fff",
               resize: "none",
             }}
             rows={2}
@@ -332,25 +356,25 @@ export default function EditorScreen({ user }: Props) {
             disabled={isGenerating}
             style={{
               width: "100%",
-              marginTop: 8,
+              marginTop: 10,
               padding: "10px",
-              borderRadius: 8,
+              borderRadius: 6,
               backgroundColor: "#2563eb",
-              color: "white",
+              color: "#fff",
               border: "none",
               cursor: "pointer",
-              fontWeight: 600,
+              fontWeight: 700,
             }}
           >
-            {isGenerating ? "Generating..." : "Create Synopsis"}
+            {isGenerating ? "Consulting Muse..." : "GENERATE SYNOPSIS"}
           </button>
           {aiResult && (
             <div
               style={{
                 marginTop: 12,
                 padding: "10px",
-                backgroundColor: "white",
-                border: "1px solid #d1d5db",
+                backgroundColor: "#0f172a",
+                border: "1px solid #334155",
                 borderRadius: 8,
               }}
             >
@@ -359,7 +383,7 @@ export default function EditorScreen({ user }: Props) {
                   fontSize: 11,
                   margin: 0,
                   fontStyle: "italic",
-                  color: "#374151",
+                  color: "#cbd5e1",
                 }}
               >
                 {aiResult}
@@ -377,7 +401,7 @@ export default function EditorScreen({ user }: Props) {
                 style={{
                   marginTop: 8,
                   fontSize: 11,
-                  color: "#2563eb",
+                  color: "#38bdf8",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
@@ -392,32 +416,40 @@ export default function EditorScreen({ user }: Props) {
       </aside>
 
       {/* EDITOR */}
-      <main style={{ flex: 1, overflowY: "auto", padding: "40px 20px" }}>
+      <main
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "60px 20px",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
         {active && (
-          <div style={{ maxWidth: 850, margin: "0 auto" }}>
+          <div style={{ width: "100%", maxWidth: "850px" }}>
             <header
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "flex-end",
-                marginBottom: 40,
+                marginBottom: 30,
               }}
             >
               <input
                 value={active.metadata.title}
                 onChange={(e) =>
-                  updateActive((p) => ({
-                    ...p,
-                    metadata: { ...p.metadata, title: e.target.value },
+                  updateActive((prev) => ({
+                    ...prev,
+                    metadata: { ...prev.metadata, title: e.target.value },
                   }))
                 }
                 style={{
                   fontSize: 32,
-                  fontWeight: 800,
+                  fontWeight: 900,
                   border: "none",
                   background: "transparent",
+                  color: "#fff",
                   outline: "none",
-                  color: "#111827",
                   width: "70%",
                 }}
               />
@@ -427,9 +459,9 @@ export default function EditorScreen({ user }: Props) {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    padding: "4px 12px",
-                    borderRadius: 12,
-                    fontSize: 11,
+                    padding: "6px 16px",
+                    borderRadius: 20,
+                    fontSize: 12,
                     fontWeight: 700,
                     color: status.color,
                     backgroundColor: status.bg,
@@ -438,8 +470,8 @@ export default function EditorScreen({ user }: Props) {
                 >
                   <span
                     style={{
-                      width: 6,
-                      height: 6,
+                      width: 8,
+                      height: 8,
                       borderRadius: "50%",
                       backgroundColor: status.color,
                       animation:
@@ -452,9 +484,9 @@ export default function EditorScreen({ user }: Props) {
                   onClick={deleteCurrentProject}
                   style={{
                     display: "block",
-                    marginTop: 8,
+                    marginTop: 12,
                     fontSize: 11,
-                    color: "#ef4444",
+                    color: "#f87171",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -469,16 +501,16 @@ export default function EditorScreen({ user }: Props) {
             <div
               style={{
                 backgroundColor: "white",
-                padding: "80px 60px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                borderRadius: 4,
-                minHeight: "110vh",
+                minHeight: "1056px",
+                width: "100%",
+                padding: "90px 70px",
+                boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
               }}
             >
               {active.content.map((b) => (
                 <div
                   key={b.id}
-                  style={{ position: "relative", marginBottom: 10 }}
+                  style={{ position: "relative", marginBottom: 12 }}
                   className="block-container"
                 >
                   <div
@@ -503,7 +535,7 @@ export default function EditorScreen({ user }: Props) {
                         fontWeight: 700,
                         color: "#9ca3af",
                         textTransform: "uppercase",
-                        background: "#f9fafb",
+                        background: "none",
                         cursor: "pointer",
                       }}
                     >
@@ -520,7 +552,7 @@ export default function EditorScreen({ user }: Props) {
                         border: "none",
                         background: "none",
                         cursor: "pointer",
-                        color: "#d1d5db",
+                        color: "#cbd5e1",
                       }}
                     >
                       +
@@ -531,7 +563,7 @@ export default function EditorScreen({ user }: Props) {
                         border: "none",
                         background: "none",
                         cursor: "pointer",
-                        color: "#d1d5db",
+                        color: "#cbd5e1",
                       }}
                     >
                       ✕
@@ -563,10 +595,8 @@ export default function EditorScreen({ user }: Props) {
                         b.type === "dialogue"
                           ? "300px"
                           : b.type === "character" || b.type === "parenthetical"
-                            ? "200px"
+                            ? "220px"
                             : "100%",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
                       textAlign:
                         b.type === "character" ||
                         b.type === "parenthetical" ||
@@ -579,6 +609,7 @@ export default function EditorScreen({ user }: Props) {
                         b.type === "transition"
                           ? "uppercase"
                           : "none",
+                      color: "#000",
                     }}
                     onInput={(e) => {
                       const target = e.target as HTMLTextAreaElement;
@@ -597,7 +628,7 @@ export default function EditorScreen({ user }: Props) {
                       }
                       if (e.key === "Tab") {
                         e.preventDefault();
-                        const types: ScriptBlock["type"][] = [
+                        const types: any[] = [
                           "scene-heading",
                           "action",
                           "character",
@@ -627,7 +658,7 @@ export default function EditorScreen({ user }: Props) {
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         .block-tools { opacity: 0; transition: opacity 0.2s; }
         .block-container:hover .block-tools { opacity: 1; }
-        textarea::placeholder { color: #f3f4f6; }
+        textarea::placeholder { color: #f1f5f9; }
       `}</style>
     </div>
   );

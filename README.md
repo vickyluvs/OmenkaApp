@@ -68,3 +68,31 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## AI Integration (local development)
+
+This project includes a simple AI backend endpoint and a small client wrapper. To enable and test AI features locally:
+
+- Create a `.env` file in the project root with your OpenAI API key and enable the client:
+
+```bash
+OPENAI_API_KEY=sk-<your-key-here>
+REACT_APP_AI_ENABLED=true
+```
+
+- Start the Express server (serves `/api/ai`) and the React app together:
+
+```bash
+# start the backend server
+npm run server
+
+# in a separate terminal, start the React dev server
+npm start
+
+# or run both concurrently
+npm run dev
+```
+
+- The React app proxies `/api/ai` to `http://localhost:5000` during development, so client calls like `fetch('/api/ai')` work without extra config.
+
+Security note: keep `OPENAI_API_KEY` secret and do not commit `.env` to source control. For production deployments, configure the key in your hosting provider's environment settings.
